@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>シュシュとジン｜送迎代管理</title>
+  <style>
+    :root { --ink:#20313d; --muted:#71808a; --line:#e6eaeb; --paper:#fffdf8; --bg:#f4f6f3; --accent:#e8664e; --teal:#1c8b85; --soft:#fff0e9; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font-family:"Yu Gothic UI","Hiragino Sans",system-ui,sans-serif; }
+    .wrap { max-width:1060px; margin:auto; padding:38px 22px 58px; }
+    header { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin-bottom:26px; }
+    h1 { font-size:clamp(25px,4vw,38px); line-height:1.12; letter-spacing:.02em; margin:0; }
+    h1 span { color:var(--accent); }
+    .date { color:var(--muted); font-size:14px; white-space:nowrap; }
+    .grid { display:grid; grid-template-columns:330px 1fr; gap:22px; align-items:start; }
+    .card { background:var(--paper); border:1px solid var(--line); border-radius:18px; box-shadow:0 5px 18px #18312a08; }
+    .form { padding:22px; position:sticky; top:16px; }
+    h2 { font-size:16px; margin:0 0 18px; letter-spacing:.05em; }
+    label { font-size:13px; color:var(--muted); display:block; margin:15px 0 6px; }
+    input, select { width:100%; border:1px solid #d9dfdf; border-radius:10px; padding:11px 12px; background:#fff; font:inherit; color:var(--ink); }
+    input:focus, select:focus { outline:3px solid #bce4df; border-color:var(--teal); }
+    .options { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .option { position:relative; }
+    .option input { position:absolute; opacity:0; }
+    .option span { display:block; text-align:center; padding:10px 5px; border:1px solid #d9dfdf; border-radius:10px; color:var(--muted); cursor:pointer; }
+    .option input:checked + span { border-color:var(--teal); background:#e7f6f4; color:#126d68; font-weight:700; }
+    button { border:0; font:inherit; cursor:pointer; border-radius:10px; }
+    .add { width:100%; margin-top:22px; padding:13px; background:var(--accent); color:#fff; font-weight:700; box-shadow:0 5px 10px #e8664e35; }
+    .add:hover { filter:brightness(.96); }
+    .content { display:grid; gap:22px; }
+    .totals { padding:22px; }
+    .period { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:18px; }
+    .period h2 { margin:0; }
+    #month { width:155px; padding:8px; font-size:14px; }
+    .stats { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+    .stat { padding:15px; border-radius:13px; background:#f7f8f5; }
+    .stat:nth-child(2) { background:#e8f6f4; } .stat:nth-child(3) { background:var(--soft); }
+    .stat small { display:block; color:var(--muted); margin-bottom:6px; font-size:12px; }
+    .stat strong { font-size:22px; letter-spacing:-.02em; }
+    .settlement { margin-top:16px; padding:13px 15px; border-radius:11px; background:#fff5d9; font-size:14px; line-height:1.55; }
+    .history { padding:22px; }
+    .history-head { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+    .history-head h2 { margin:0; }
+    .clear { color:var(--muted); background:none; padding:6px; font-size:12px; text-decoration:underline; }
+    .records { margin-top:14px; }
+    .record { display:grid; grid-template-columns:44px 1fr auto 30px; gap:11px; align-items:center; padding:13px 2px; border-top:1px solid var(--line); }
+    .badge { width:40px; height:40px; display:grid; place-items:center; border-radius:50%; background:#e7f6f4; color:#146c67; font-weight:800; }
+    .record:nth-child(even) .badge { background:var(--soft); color:#b64d3a; }
+    .record-title { font-weight:700; font-size:14px; }
+    .record-sub { color:var(--muted); font-size:12px; margin-top:3px; }
+    .amount { font-weight:800; white-space:nowrap; }
+    .delete { width:28px; height:28px; color:#a2adaf; background:transparent; font-size:20px; line-height:1; }
+    .delete:hover { color:var(--accent); background:var(--soft); }
+    .empty { text-align:center; color:var(--muted); padding:38px 10px 20px; font-size:14px; }
+    footer { color:var(--muted); font-size:12px; text-align:center; margin-top:24px; }
+    @media(max-width:760px) { .wrap{padding:22px 14px 42px}.grid{grid-template-columns:1fr;gap:15px}.card{border-radius:15px}.form{position:static;padding:18px}.totals,.history{padding:18px}.stats{grid-template-columns:1fr 1fr;gap:9px}.stat{padding:13px}.stat strong{font-size:19px}.period{align-items:flex-start;flex-direction:column;gap:8px}#month{width:100%}.record{grid-template-columns:38px 1fr auto 26px;gap:8px}.badge{width:35px;height:35px}.record-title{font-size:13px}.record-sub{font-size:11px}.amount{font-size:13px}.settlement{font-size:13px}.date{display:none} }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header><div><h1><span>シュシュ</span> と <span>ジン</span>の送迎代</h1></div><div class="date" id="today"></div></header>
+    <div class="grid">
+      <section class="card form">
+        <h2>送迎を記録</h2>
+        <label for="rideDate">日付</label><input id="rideDate" type="date">
+        <label for="store">店名・利用先</label><input id="store" type="text" placeholder="例：○○タクシー、ガソリンスタンド">
+        <label for="amountInput">金額</label><input id="amountInput" inputmode="numeric" type="number" min="0" step="10" placeholder="例：1200">
+        <button class="add" id="add">＋ 記録する</button>
+      </section>
+      <section class="content">
+        <section class="card totals">
+          <div class="period"><h2>今月のまとめ</h2><input id="month" type="month"></div>
+          <div class="stats"><div class="stat"><small>選択月の合計</small><strong id="total">¥0</strong></div><div class="stat"><small id="yearLabel">年間合計</small><strong id="yearTotal">¥0</strong></div></div>
+          <div class="settlement" id="settlement">日付・店名・金額を入力して記録しましょう。</div>
+        </section>
+        <section class="card history"><div class="history-head"><h2>送迎の履歴</h2><button class="clear" id="clear">この月の記録を消す</button></div><div class="records" id="records"></div></section>
+      </section>
+    </div>
+    <footer>この端末内に保存されます。</footer>
+  </main>
+  <script>
+    const $ = id => document.getElementById(id);
+    const yen = n => new Intl.NumberFormat('ja-JP',{style:'currency',currency:'JPY',maximumFractionDigits:0}).format(n);
+    const localDate = new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
+    const currentMonth = localDate.slice(0,7);
+    $('rideDate').value = localDate; $('month').value = currentMonth;
+    $('today').textContent = new Intl.DateTimeFormat('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'}).format(new Date());
+    let entries = JSON.parse(localStorage.getItem('sougeiEntries') || '[]').map(x => ({...x, store:x.store || x.memo || '送迎代'}));
+    function render(){
+      const month = $('month').value;
+      const list = entries.filter(x=>x.date.startsWith(month)).sort((a,b)=>b.date.localeCompare(a.date));
+      const all=list.reduce((s,x)=>s+x.amount,0);
+      const year = month.slice(0,4);
+      const annual = entries.filter(x=>x.date.startsWith(year)).reduce((s,x)=>s+x.amount,0);
+      $('total').textContent=yen(all); $('yearTotal').textContent=yen(annual); $('yearLabel').textContent=`${year}年の年間合計`;
+      $('settlement').textContent = all===0 ? 'この月の記録はありません。' : `${month.replace('-','年')}月は ${list.length} 件、${yen(all)} です。`;
+      $('records').innerHTML = list.length ? list.map(x=>`<article class="record"><div class="badge">店</div><div><div class="record-title">${escapeHtml(x.store)}</div><div class="record-sub">${x.date.replaceAll('-','/')}</div></div><div class="amount">${yen(x.amount)}</div><button class="delete" data-id="${x.id}" aria-label="削除">×</button></article>`).join('') : '<div class="empty">この月の送迎記録はありません。</div>';
+    }
+    function escapeHtml(text){ return text.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])); }
+    function save(){localStorage.setItem('sougeiEntries',JSON.stringify(entries));render();}
+    $('add').onclick=()=>{const amount=Number($('amountInput').value), store=$('store').value.trim(); if(!store){$('store').focus();return;} if(!amount||amount<0){$('amountInput').focus();return;} entries.push({id:crypto.randomUUID(),date:$('rideDate').value,store,amount}); $('store').value='';$('amountInput').value=''; save();};
+    $('month').onchange=render;
+    $('records').onclick=e=>{const id=e.target.dataset.id;if(id){entries=entries.filter(x=>x.id!==id);save();}};
+    $('clear').onclick=()=>{const month=$('month').value;if(entries.some(x=>x.date.startsWith(month))&&confirm(`${month} の記録をすべて削除しますか？`)){entries=entries.filter(x=>!x.date.startsWith(month));save();}};
+    render();
+  </script>
+</body>
+</html>
