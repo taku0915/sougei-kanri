@@ -77,7 +77,7 @@
     <header><div><h1>愛・ジン・シュシュ収支</h1></div><div class="header-tools"><button class="tool" id="backup">バックアップ</button><button class="tool" id="restore">復元</button><input id="restoreFile" type="file" accept="application/json,.json" hidden><div class="date" id="today"></div></div></header>
     <div class="grid">
       <section class="card form">
-        <h2>収入を記録</h2>
+        <h2 id="incomeFormTitle">収入を記録</h2>
         <label for="rideDate">日付</label><input id="rideDate" type="date">
         <label for="amountInput">金額</label><input id="amountInput" inputmode="numeric" type="number" min="0" step="10" placeholder="例：1200">
         <label for="incomeWork">どの仕事の収入？</label><select id="incomeWork"><option>愛</option><option>ジン</option><option>シュシュ</option></select>
@@ -121,7 +121,7 @@
     const jobs=['愛','ジン','シュシュ'];
     const expenseCategories=['ガソリン代','駐車場代','高速代','車両費','自動車保険','携帯・通信費','消耗品費','その他','交通費','飲食代','光熱費'];
     const normalizeWork=work=>work==='キッチン'?'愛':work;
-    let entries, expenses, editingExpenseId=null;
+    let entries, expenses, editingIncomeId=null, editingExpenseId=null;
     try { entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]').map(x => ({...x, store:x.store || x.memo || '送迎代'})); } catch { entries = []; }
     try { expenses = JSON.parse(localStorage.getItem(EXPENSE_KEY) || '[]'); if(!Array.isArray(expenses)) expenses=[]; } catch { expenses = []; }
     $('expenseDate').value=localDate;
@@ -129,22 +129,22 @@
     function render(){
       const month = $('month').value;
       $('summaryTitle').textContent = month===currentMonth ? '今月の収支' : `${month.replace('-','年')}月の収支`;
-      const list = entries.filter(x=>x.date.startsWith(month)).sort((a,b)=>b.date.localeCompare(a.date));
+      const list = entries.filter(x=>x.date&&x.date.startsWith(month)).sort((a,b)=>b.date.localeCompare(a.date));
       const expenseList=expenses.filter(x=>x.date&&x.date.startsWith(month)).sort((a,b)=>b.date.localeCompare(a.date));
       const all=list.reduce((s,x)=>s+Number(x.amount||0),0), expenseAll=expenseList.reduce((s,x)=>s+Number(x.amount||0),0);
       $('total').textContent=yen(all); $('expenseTotal').textContent=yen(expenseAll); $('profitTotal').textContent=yen(all-expenseAll);
       $('settlement').textContent = all===0&&expenseAll===0 ? 'この月の記録はありません。' : `${month.replace('-','年')}月の利益は ${yen(all-expenseAll)} です。`;
       $('personStats').innerHTML=jobs.map(job=>{const income=list.filter(x=>normalizeWork(x.work||x.store)===job).reduce((s,x)=>s+Number(x.amount||0),0);return `<div class="person-stat"><b>${job}</b><span>${yen(income)}</span></div>`}).join('');
       $('categoryStats').innerHTML=expenseCategories.map(category=>`<div class="category-stat"><span>${category}</span><strong>${yen(expenseList.filter(x=>x.category===category).reduce((s,x)=>s+Number(x.amount||0),0))}</strong></div>`).join('');
-      $('records').innerHTML = list.length ? list.map(x=>`<article class="record"><div class="badge">収</div><div><div class="record-title">${escapeHtml(normalizeWork(x.work||x.store)||'収入')}</div><div class="record-sub">${x.date.replaceAll('-','/')}${x.memo?' ・ '+escapeHtml(x.memo):''}</div></div><div class="amount">${yen(x.amount)}</div><button class="delete" data-id="${x.id}" aria-label="削除">×</button></article>`).join('') : '<div class="empty">この月の収入記録はありません。</div>';
+      $('records').innerHTML = list.length ? list.map(x=>`<article class="record"><div class="badge">収</div><div><div class="record-title">${escapeHtml(normalizeWork(x.work||x.store)||'収入')}</div><div class="record-sub">${x.date.replaceAll('-','/')}${x.memo?' ・ '+escapeHtml(x.memo):''}</div></div><div class="amount">${yen(x.amount)}</div><div><button class="delete edit-income" data-id="${x.id}" aria-label="編集">✎</button><button class="delete delete-income" data-id="${x.id}" aria-label="削除">×</button></div></article>`).join('') : '<div class="empty">この月の収入記録はありません。</div>';
       $('expenseRecords').innerHTML=expenseList.length?expenseList.map(x=>`<article class="record"><div class="badge">費</div><div><div class="record-title">${escapeHtml(x.category)} ・ ${escapeHtml(x.payee)}</div><div class="record-sub">${x.date.replaceAll('-','/')} ・ ${escapeHtml(x.work)}${x.memo?' ・ '+escapeHtml(x.memo):''}</div></div><div class="amount">${yen(x.amount)}</div><div><button class="delete edit-expense" data-id="${x.id}" aria-label="編集">✎</button><button class="delete delete-expense" data-id="${x.id}" aria-label="削除">×</button></div></article>`).join(''):'<div class="empty">この月の経費記録はありません。</div>';
     }
     function escapeHtml(text){ return text.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])); }
     function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(entries));render();}
     function saveExpenses(){localStorage.setItem(EXPENSE_KEY,JSON.stringify(expenses));render();}
-    $('add').onclick=()=>{const amount=Number($('amountInput').value),work=$('incomeWork').value,memo=$('incomeMemo').value.trim();if(!amount||amount<0){$('amountInput').focus();return;}entries.push({id:crypto.randomUUID(),date:$('rideDate').value,store:work,amount,work,memo});$('amountInput').value='';$('incomeMemo').value='';save();};
+    $('add').onclick=()=>{const amount=Number($('amountInput').value),work=$('incomeWork').value,memo=$('incomeMemo').value.trim();if(!amount||amount<0){$('amountInput').focus();return;}const data={id:editingIncomeId||crypto.randomUUID(),date:$('rideDate').value,store:work,amount,work,memo};if(editingIncomeId)entries=entries.map(x=>x.id===editingIncomeId?{...x,...data}:x);else entries.push(data);editingIncomeId=null;$('incomeFormTitle').textContent='収入を記録';$('add').textContent='＋ 収入を記録';$('amountInput').value='';$('incomeMemo').value='';save();};
     $('month').onchange=render;
-    $('records').onclick=e=>{const id=e.target.dataset.id;if(id){entries=entries.filter(x=>x.id!==id);save();}};
+    $('records').onclick=e=>{const id=e.target.dataset.id;if(!id)return;if(e.target.classList.contains('delete-income')){if(confirm('この収入を削除しますか？')){entries=entries.filter(x=>x.id!==id);save();}}if(e.target.classList.contains('edit-income')){const x=entries.find(v=>v.id===id);if(!x)return;editingIncomeId=id;$('rideDate').value=x.date;$('amountInput').value=x.amount;$('incomeWork').value=normalizeWork(x.work||x.store)||'愛';$('incomeMemo').value=x.memo||'';$('incomeFormTitle').textContent='収入を編集';$('add').textContent='変更を保存';window.scrollTo({top:0,behavior:'smooth'});}};
     $('clear').onclick=()=>{const month=$('month').value;if(entries.some(x=>x.date.startsWith(month))&&confirm(`${month} の記録をすべて削除しますか？`)){entries=entries.filter(x=>!x.date.startsWith(month));save();}};
     $('saveExpense').onclick=()=>{const amount=Number($('expenseAmount').value),payee=$('expensePayee').value.trim();if(!payee){$('expensePayee').focus();return;}if(!amount||amount<0){$('expenseAmount').focus();return;}const data={id:editingExpenseId||crypto.randomUUID(),date:$('expenseDate').value,amount,category:$('expenseCategory').value,payee,memo:$('expenseMemo').value.trim(),work:$('expenseWork').value};if(editingExpenseId)expenses=expenses.map(x=>x.id===editingExpenseId?data:x);else expenses.push(data);editingExpenseId=null;$('expenseFormTitle').textContent='経費を記録';$('saveExpense').textContent='＋ 経費を記録';$('expenseAmount').value='';$('expensePayee').value='';$('expenseMemo').value='';saveExpenses();};
     $('expenseRecords').onclick=e=>{const id=e.target.dataset.id;if(!id)return;if(e.target.classList.contains('delete-expense')){if(confirm('この経費を削除しますか？')){expenses=expenses.filter(x=>x.id!==id);saveExpenses();}}if(e.target.classList.contains('edit-expense')){const x=expenses.find(v=>v.id===id);if(!x)return;editingExpenseId=id;$('expenseDate').value=x.date;$('expenseAmount').value=x.amount;$('expenseCategory').value=x.category;$('expensePayee').value=x.payee;$('expenseMemo').value=x.memo||'';$('expenseWork').value=x.work;$('expenseFormTitle').textContent='経費を編集';$('saveExpense').textContent='変更を保存';window.scrollTo({top:document.querySelector('.expense-area').offsetTop-12,behavior:'smooth'});}};
