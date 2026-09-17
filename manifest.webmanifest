@@ -1,7 +1,11 @@
 {
   "name": "裏帳簿",
   "short_name": "裏帳簿",
-  "start_url": "./?v=20260918-2",
+  "start_url": "./?v=20260918-3",
+  "icons": [
+    {"src":"icons/urachoubo-icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"icons/urachoubo-icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"}
+  ],
   "display": "standalone",
   "background_color": "#f4f6f3",
   "theme_color": "#f4f6f3"
