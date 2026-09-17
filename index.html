@@ -84,7 +84,7 @@
       </section>
       <section class="content">
         <section class="card totals">
-          <div class="period"><h2>今月のまとめ</h2><input id="month" type="month"></div>
+          <div class="period"><h2 id="summaryTitle">今月の収支</h2><input id="month" type="month" aria-label="表示する月"></div>
           <div class="stats"><div class="stat"><small>総収入</small><strong id="total">¥0</strong></div><div class="stat"><small>総経費</small><strong id="expenseTotal">¥0</strong></div><div class="stat"><small>利益</small><strong id="profitTotal">¥0</strong></div></div>
           <div class="person-stats" id="personStats"></div>
           <div class="settlement" id="settlement">日付・店名・金額を入力して記録しましょう。</div>
@@ -96,7 +96,7 @@
       <section class="card expense-form"><h2 id="expenseFormTitle">経費を記録</h2>
         <label for="expenseDate">日付</label><input id="expenseDate" type="date">
         <label for="expenseAmount">金額</label><input id="expenseAmount" inputmode="numeric" type="number" min="0" step="1" placeholder="例：1200">
-        <label for="expenseCategory">経費カテゴリー</label><select id="expenseCategory"><option>ガソリン代</option><option>駐車場代</option><option>高速代</option><option>車両費</option><option>自動車保険</option><option>携帯・通信費</option><option>消耗品費</option><option>その他</option></select>
+        <label for="expenseCategory">経費カテゴリー</label><select id="expenseCategory"><option>ガソリン代</option><option>駐車場代</option><option>高速代</option><option>車両費</option><option>自動車保険</option><option>携帯・通信費</option><option>消耗品費</option><option>その他</option><option>交通費</option><option>飲食代</option><option>光熱費</option></select>
         <label for="expensePayee">支払先</label><input id="expensePayee" type="text" placeholder="例：ENEOS">
         <label for="expenseMemo">メモ（任意）</label><input id="expenseMemo" type="text" placeholder="例：9月分">
         <label for="expenseWork">どの仕事の経費？</label><select id="expenseWork"><option>愛</option><option>ジン</option><option>シュシュ</option><option>共通</option></select>
@@ -124,12 +124,13 @@
     function showMessage(text, isError=false){ const target=$('message'); target.textContent=text; target.className=isError?'message error':'message'; }
     function render(){
       const month = $('month').value;
+      $('summaryTitle').textContent = month===currentMonth ? '今月の収支' : `${month.replace('-','年')}月の収支`;
       const list = entries.filter(x=>x.date.startsWith(month)).sort((a,b)=>b.date.localeCompare(a.date));
       const expenseList=expenses.filter(x=>x.date&&x.date.startsWith(month)).sort((a,b)=>b.date.localeCompare(a.date));
       const all=list.reduce((s,x)=>s+Number(x.amount||0),0), expenseAll=expenseList.reduce((s,x)=>s+Number(x.amount||0),0);
       $('total').textContent=yen(all); $('expenseTotal').textContent=yen(expenseAll); $('profitTotal').textContent=yen(all-expenseAll);
       $('settlement').textContent = all===0&&expenseAll===0 ? 'この月の記録はありません。' : `${month.replace('-','年')}月の利益は ${yen(all-expenseAll)} です。`;
-      $('personStats').innerHTML=jobs.map(job=>{const income=list.filter(x=>normalizeWork(x.work||x.store)===job).reduce((s,x)=>s+Number(x.amount||0),0);const cost=expenseList.filter(x=>normalizeWork(x.work)===job||x.work==='共通').reduce((s,x)=>s+Number(x.amount||0),0);return `<div class="person-stat"><b>${job}</b><span>収入 ${yen(income)}</span><span>経費 ${yen(cost)}</span><span>利益 ${yen(income-cost)}</span></div>`}).join('');
+      $('personStats').innerHTML=jobs.map(job=>{const income=list.filter(x=>normalizeWork(x.work||x.store)===job).reduce((s,x)=>s+Number(x.amount||0),0);const cost=expenseList.filter(x=>normalizeWork(x.work)===job||x.work==='共通').reduce((s,x)=>s+Number(x.amount||0),0);return `<div class="person-stat"><b>${job}の${month===currentMonth?'今月':'選択月'}収入</b><span>収入 ${yen(income)}</span><span>経費 ${yen(cost)}</span><span>収支 ${yen(income-cost)}</span></div>`}).join('');
       $('records').innerHTML = list.length ? list.map(x=>`<article class="record"><div class="badge">収</div><div><div class="record-title">${escapeHtml(normalizeWork(x.work||x.store)||'収入')}</div><div class="record-sub">${x.date.replaceAll('-','/')}${x.memo?' ・ '+escapeHtml(x.memo):''}</div></div><div class="amount">${yen(x.amount)}</div><button class="delete" data-id="${x.id}" aria-label="削除">×</button></article>`).join('') : '<div class="empty">この月の収入記録はありません。</div>';
       $('expenseRecords').innerHTML=expenseList.length?expenseList.map(x=>`<article class="record"><div class="badge">費</div><div><div class="record-title">${escapeHtml(x.category)} ・ ${escapeHtml(x.payee)}</div><div class="record-sub">${x.date.replaceAll('-','/')} ・ ${escapeHtml(x.work)}${x.memo?' ・ '+escapeHtml(x.memo):''}</div></div><div class="amount">${yen(x.amount)}</div><div><button class="delete edit-expense" data-id="${x.id}" aria-label="編集">✎</button><button class="delete delete-expense" data-id="${x.id}" aria-label="削除">×</button></div></article>`).join(''):'<div class="empty">この月の経費記録はありません。</div>';
     }
