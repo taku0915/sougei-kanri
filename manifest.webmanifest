@@ -1,7 +1,7 @@
 {
-  "name": "愛・ジン・シュシュ収支",
-  "short_name": "愛・ジン・シュシュ収支",
-  "start_url": "./?v=20260918-1",
+  "name": "裏帳簿",
+  "short_name": "裏帳簿",
+  "start_url": "./?v=20260918-2",
   "display": "standalone",
   "background_color": "#f4f6f3",
   "theme_color": "#f4f6f3"
