@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ai-jin-shushu-v1';
+const CACHE_NAME = 'urachoubo-v2';
 
 self.addEventListener('install', event => {
   self.skipWaiting();
