@@ -75,12 +75,12 @@
     <header><div><h1>愛・ジン・シュシュ収支</h1></div><div class="header-tools"><button class="tool" id="backup">バックアップ</button><button class="tool" id="restore">復元</button><input id="restoreFile" type="file" accept="application/json,.json" hidden><div class="date" id="today"></div></div></header>
     <div class="grid">
       <section class="card form">
-        <h2>送迎を記録</h2>
+        <h2>収入を記録</h2>
         <label for="rideDate">日付</label><input id="rideDate" type="date">
-        <label for="store">店名・利用先</label><input id="store" type="text" placeholder="例：○○タクシー、ガソリンスタンド">
         <label for="amountInput">金額</label><input id="amountInput" inputmode="numeric" type="number" min="0" step="10" placeholder="例：1200">
-        <label for="incomeWork">どの仕事の収入？</label><select id="incomeWork"><option value="">選択なし</option><option>シュシュ</option><option>ジン</option><option>キッチン</option></select>
-        <button class="add" id="add">＋ 記録する</button>
+        <label for="incomeWork">どの仕事の収入？</label><select id="incomeWork"><option>愛</option><option>ジン</option><option>シュシュ</option></select>
+        <label for="incomeMemo">メモ（任意）</label><input id="incomeMemo" type="text" placeholder="例：9月分の給与、○○駅まで">
+        <button class="add" id="add">＋ 収入を記録</button>
       </section>
       <section class="content">
         <section class="card totals">
@@ -99,7 +99,7 @@
         <label for="expenseCategory">経費カテゴリー</label><select id="expenseCategory"><option>ガソリン代</option><option>駐車場代</option><option>高速代</option><option>車両費</option><option>自動車保険</option><option>携帯・通信費</option><option>消耗品費</option><option>その他</option></select>
         <label for="expensePayee">支払先</label><input id="expensePayee" type="text" placeholder="例：ENEOS">
         <label for="expenseMemo">メモ（任意）</label><input id="expenseMemo" type="text" placeholder="例：9月分">
-        <label for="expenseWork">どの仕事の経費？</label><select id="expenseWork"><option>シュシュ</option><option>ジン</option><option>キッチン</option><option>共通</option></select>
+        <label for="expenseWork">どの仕事の経費？</label><select id="expenseWork"><option>愛</option><option>ジン</option><option>シュシュ</option><option>共通</option></select>
         <button class="add" id="saveExpense">＋ 経費を記録</button>
       </section>
       <section class="card history"><div class="history-head"><h2>経費の履歴</h2><button class="clear" id="clearExpenses">この月の経費を消す</button></div><div class="records" id="expenseRecords"></div></section>
@@ -115,7 +115,8 @@
     $('rideDate').value = localDate; $('month').value = currentMonth;
     $('today').textContent = new Intl.DateTimeFormat('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'}).format(new Date());
     const STORAGE_KEY = 'sougeiEntries', EXPENSE_KEY = 'sougeiExpenses';
-    const jobs=['シュシュ','ジン','キッチン'];
+    const jobs=['愛','ジン','シュシュ'];
+    const normalizeWork=work=>work==='キッチン'?'愛':work;
     let entries, expenses, editingExpenseId=null;
     try { entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]').map(x => ({...x, store:x.store || x.memo || '送迎代'})); } catch { entries = []; }
     try { expenses = JSON.parse(localStorage.getItem(EXPENSE_KEY) || '[]'); if(!Array.isArray(expenses)) expenses=[]; } catch { expenses = []; }
@@ -128,14 +129,14 @@
       const all=list.reduce((s,x)=>s+Number(x.amount||0),0), expenseAll=expenseList.reduce((s,x)=>s+Number(x.amount||0),0);
       $('total').textContent=yen(all); $('expenseTotal').textContent=yen(expenseAll); $('profitTotal').textContent=yen(all-expenseAll);
       $('settlement').textContent = all===0&&expenseAll===0 ? 'この月の記録はありません。' : `${month.replace('-','年')}月の利益は ${yen(all-expenseAll)} です。`;
-      $('personStats').innerHTML=jobs.map(job=>{const income=list.filter(x=>x.work===job||x.store===job).reduce((s,x)=>s+Number(x.amount||0),0);const cost=expenseList.filter(x=>x.work===job||x.work==='共通').reduce((s,x)=>s+Number(x.amount||0),0);return `<div class="person-stat"><b>${job}</b><span>収入 ${yen(income)}</span><span>経費 ${yen(cost)}</span><span>利益 ${yen(income-cost)}</span></div>`}).join('');
-      $('records').innerHTML = list.length ? list.map(x=>`<article class="record"><div class="badge">店</div><div><div class="record-title">${escapeHtml(x.store)}</div><div class="record-sub">${x.date.replaceAll('-','/')}</div></div><div class="amount">${yen(x.amount)}</div><button class="delete" data-id="${x.id}" aria-label="削除">×</button></article>`).join('') : '<div class="empty">この月の送迎記録はありません。</div>';
+      $('personStats').innerHTML=jobs.map(job=>{const income=list.filter(x=>normalizeWork(x.work||x.store)===job).reduce((s,x)=>s+Number(x.amount||0),0);const cost=expenseList.filter(x=>normalizeWork(x.work)===job||x.work==='共通').reduce((s,x)=>s+Number(x.amount||0),0);return `<div class="person-stat"><b>${job}</b><span>収入 ${yen(income)}</span><span>経費 ${yen(cost)}</span><span>利益 ${yen(income-cost)}</span></div>`}).join('');
+      $('records').innerHTML = list.length ? list.map(x=>`<article class="record"><div class="badge">収</div><div><div class="record-title">${escapeHtml(normalizeWork(x.work||x.store)||'収入')}</div><div class="record-sub">${x.date.replaceAll('-','/')}${x.memo?' ・ '+escapeHtml(x.memo):''}</div></div><div class="amount">${yen(x.amount)}</div><button class="delete" data-id="${x.id}" aria-label="削除">×</button></article>`).join('') : '<div class="empty">この月の収入記録はありません。</div>';
       $('expenseRecords').innerHTML=expenseList.length?expenseList.map(x=>`<article class="record"><div class="badge">費</div><div><div class="record-title">${escapeHtml(x.category)} ・ ${escapeHtml(x.payee)}</div><div class="record-sub">${x.date.replaceAll('-','/')} ・ ${escapeHtml(x.work)}${x.memo?' ・ '+escapeHtml(x.memo):''}</div></div><div class="amount">${yen(x.amount)}</div><div><button class="delete edit-expense" data-id="${x.id}" aria-label="編集">✎</button><button class="delete delete-expense" data-id="${x.id}" aria-label="削除">×</button></div></article>`).join(''):'<div class="empty">この月の経費記録はありません。</div>';
     }
     function escapeHtml(text){ return text.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])); }
     function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(entries));render();}
     function saveExpenses(){localStorage.setItem(EXPENSE_KEY,JSON.stringify(expenses));render();}
-    $('add').onclick=()=>{const amount=Number($('amountInput').value), store=$('store').value.trim(), work=$('incomeWork').value; if(!store){$('store').focus();return;} if(!amount||amount<0){$('amountInput').focus();return;} entries.push({id:crypto.randomUUID(),date:$('rideDate').value,store,amount,work}); $('store').value='';$('amountInput').value='';$('incomeWork').value=''; save();};
+    $('add').onclick=()=>{const amount=Number($('amountInput').value),work=$('incomeWork').value,memo=$('incomeMemo').value.trim();if(!amount||amount<0){$('amountInput').focus();return;}entries.push({id:crypto.randomUUID(),date:$('rideDate').value,store:work,amount,work,memo});$('amountInput').value='';$('incomeMemo').value='';save();};
     $('month').onchange=render;
     $('records').onclick=e=>{const id=e.target.dataset.id;if(id){entries=entries.filter(x=>x.id!==id);save();}};
     $('clear').onclick=()=>{const month=$('month').value;if(entries.some(x=>x.date.startsWith(month))&&confirm(`${month} の記録をすべて削除しますか？`)){entries=entries.filter(x=>!x.date.startsWith(month));save();}};
