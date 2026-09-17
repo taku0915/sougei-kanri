@@ -78,6 +78,7 @@
         <label for="rideDate">日付</label><input id="rideDate" type="date">
         <label for="store">店名・利用先</label><input id="store" type="text" placeholder="例：○○タクシー、ガソリンスタンド">
         <label for="amountInput">金額</label><input id="amountInput" inputmode="numeric" type="number" min="0" step="10" placeholder="例：1200">
+        <label for="incomeWork">どの仕事の収入？</label><select id="incomeWork"><option value="">選択なし</option><option>シュシュ</option><option>ジン</option><option>キッチン</option></select>
         <button class="add" id="add">＋ 記録する</button>
       </section>
       <section class="content">
@@ -133,7 +134,7 @@
     function escapeHtml(text){ return text.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])); }
     function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(entries));render();}
     function saveExpenses(){localStorage.setItem(EXPENSE_KEY,JSON.stringify(expenses));render();}
-    $('add').onclick=()=>{const amount=Number($('amountInput').value), store=$('store').value.trim(); if(!store){$('store').focus();return;} if(!amount||amount<0){$('amountInput').focus();return;} entries.push({id:crypto.randomUUID(),date:$('rideDate').value,store,amount}); $('store').value='';$('amountInput').value=''; save();};
+    $('add').onclick=()=>{const amount=Number($('amountInput').value), store=$('store').value.trim(), work=$('incomeWork').value; if(!store){$('store').focus();return;} if(!amount||amount<0){$('amountInput').focus();return;} entries.push({id:crypto.randomUUID(),date:$('rideDate').value,store,amount,work}); $('store').value='';$('amountInput').value='';$('incomeWork').value=''; save();};
     $('month').onchange=render;
     $('records').onclick=e=>{const id=e.target.dataset.id;if(id){entries=entries.filter(x=>x.id!==id);save();}};
     $('clear').onclick=()=>{const month=$('month').value;if(entries.some(x=>x.date.startsWith(month))&&confirm(`${month} の記録をすべて削除しますか？`)){entries=entries.filter(x=>!x.date.startsWith(month));save();}};
