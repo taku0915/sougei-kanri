@@ -51,6 +51,8 @@
     .person-stat { padding:11px; border:1px solid var(--line); border-radius:11px; font-size:12px; }
     .person-stat b { display:block; margin-bottom:7px; font-size:13px; }
     .person-stat span { display:block; color:var(--muted); line-height:1.55; }
+    .category-stats { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:12px; }
+    .category-stat { display:flex; justify-content:space-between; gap:8px; padding:9px 10px; border-radius:9px; background:#f7f8f5; font-size:12px; }
     .history-head { display:flex; justify-content:space-between; align-items:center; gap:10px; }
     .history-head h2 { margin:0; }
     .clear { color:var(--muted); background:none; padding:6px; font-size:12px; text-decoration:underline; }
@@ -67,7 +69,7 @@
     footer { color:var(--muted); font-size:12px; text-align:center; margin-top:24px; }
     .message { min-height:20px; margin:12px 0 -8px; text-align:center; font-size:13px; color:#176e69; }
     .message.error { color:#b64d3a; }
-    @media(max-width:760px) { .wrap{padding:22px 14px 42px}header{align-items:flex-start;flex-direction:column;margin-bottom:18px}.header-tools{width:100%}.tool{flex:1}.grid,.expense-area{grid-template-columns:1fr;gap:15px}.card{border-radius:15px}.form,.expense-form{position:static;padding:18px}.totals,.history{padding:18px}.stats{grid-template-columns:1fr 1fr;gap:9px}.person-stats{grid-template-columns:1fr}.stat{padding:13px}.stat strong{font-size:19px}.period{align-items:flex-start;flex-direction:column;gap:8px}#month{width:100%}.record{grid-template-columns:38px 1fr auto 50px;gap:8px}.badge{width:35px;height:35px}.record-title{font-size:13px}.record-sub{font-size:11px}.amount{font-size:13px}.settlement{font-size:13px}.date{display:none} }
+    @media(max-width:760px) { .wrap{padding:22px 14px 42px}header{align-items:flex-start;flex-direction:column;margin-bottom:18px}.header-tools{width:100%}.tool{flex:1}.grid,.expense-area{grid-template-columns:1fr;gap:15px}.card{border-radius:15px}.form,.expense-form{position:static;padding:18px}.totals,.history{padding:18px}.stats{grid-template-columns:1fr 1fr;gap:9px}.person-stats{grid-template-columns:1fr}.category-stats{grid-template-columns:1fr}.stat{padding:13px}.stat strong{font-size:19px}.period{align-items:flex-start;flex-direction:column;gap:8px}#month{width:100%}.record{grid-template-columns:38px 1fr auto 50px;gap:8px}.badge{width:35px;height:35px}.record-title{font-size:13px}.record-sub{font-size:11px}.amount{font-size:13px}.settlement{font-size:13px}.date{display:none} }
   </style>
 </head>
 <body>
@@ -85,8 +87,9 @@
       <section class="content">
         <section class="card totals">
           <div class="period"><h2 id="summaryTitle">今月の収支</h2><input id="month" type="month" aria-label="表示する月"></div>
-          <div class="stats"><div class="stat"><small>総収入</small><strong id="total">¥0</strong></div><div class="stat"><small>総経費</small><strong id="expenseTotal">¥0</strong></div><div class="stat"><small>利益</small><strong id="profitTotal">¥0</strong></div></div>
+          <div class="stats"><div class="stat"><small>今月の収入合計</small><strong id="total">¥0</strong></div><div class="stat"><small>今月の経費合計</small><strong id="expenseTotal">¥0</strong></div><div class="stat"><small>今月の収支</small><strong id="profitTotal">¥0</strong></div></div>
           <div class="person-stats" id="personStats"></div>
+          <div class="category-stats" id="categoryStats"></div>
           <div class="settlement" id="settlement">日付・店名・金額を入力して記録しましょう。</div>
         </section>
         <section class="card history"><div class="history-head"><h2>収入の履歴</h2><button class="clear" id="clear">この月の収入を消す</button></div><div class="records" id="records"></div></section>
@@ -116,6 +119,7 @@
     $('today').textContent = new Intl.DateTimeFormat('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'}).format(new Date());
     const STORAGE_KEY = 'sougeiEntries', EXPENSE_KEY = 'sougeiExpenses';
     const jobs=['愛','ジン','シュシュ'];
+    const expenseCategories=['ガソリン代','駐車場代','高速代','車両費','自動車保険','携帯・通信費','消耗品費','その他','交通費','飲食代','光熱費'];
     const normalizeWork=work=>work==='キッチン'?'愛':work;
     let entries, expenses, editingExpenseId=null;
     try { entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]').map(x => ({...x, store:x.store || x.memo || '送迎代'})); } catch { entries = []; }
@@ -130,7 +134,8 @@
       const all=list.reduce((s,x)=>s+Number(x.amount||0),0), expenseAll=expenseList.reduce((s,x)=>s+Number(x.amount||0),0);
       $('total').textContent=yen(all); $('expenseTotal').textContent=yen(expenseAll); $('profitTotal').textContent=yen(all-expenseAll);
       $('settlement').textContent = all===0&&expenseAll===0 ? 'この月の記録はありません。' : `${month.replace('-','年')}月の利益は ${yen(all-expenseAll)} です。`;
-      $('personStats').innerHTML=jobs.map(job=>{const income=list.filter(x=>normalizeWork(x.work||x.store)===job).reduce((s,x)=>s+Number(x.amount||0),0);const cost=expenseList.filter(x=>normalizeWork(x.work)===job||x.work==='共通').reduce((s,x)=>s+Number(x.amount||0),0);return `<div class="person-stat"><b>${job}の${month===currentMonth?'今月':'選択月'}収入</b><span>収入 ${yen(income)}</span><span>経費 ${yen(cost)}</span><span>収支 ${yen(income-cost)}</span></div>`}).join('');
+      $('personStats').innerHTML=jobs.map(job=>{const income=list.filter(x=>normalizeWork(x.work||x.store)===job).reduce((s,x)=>s+Number(x.amount||0),0);return `<div class="person-stat"><b>${job}</b><span>${yen(income)}</span></div>`}).join('');
+      $('categoryStats').innerHTML=expenseCategories.map(category=>`<div class="category-stat"><span>${category}</span><strong>${yen(expenseList.filter(x=>x.category===category).reduce((s,x)=>s+Number(x.amount||0),0))}</strong></div>`).join('');
       $('records').innerHTML = list.length ? list.map(x=>`<article class="record"><div class="badge">収</div><div><div class="record-title">${escapeHtml(normalizeWork(x.work||x.store)||'収入')}</div><div class="record-sub">${x.date.replaceAll('-','/')}${x.memo?' ・ '+escapeHtml(x.memo):''}</div></div><div class="amount">${yen(x.amount)}</div><button class="delete" data-id="${x.id}" aria-label="削除">×</button></article>`).join('') : '<div class="empty">この月の収入記録はありません。</div>';
       $('expenseRecords').innerHTML=expenseList.length?expenseList.map(x=>`<article class="record"><div class="badge">費</div><div><div class="record-title">${escapeHtml(x.category)} ・ ${escapeHtml(x.payee)}</div><div class="record-sub">${x.date.replaceAll('-','/')} ・ ${escapeHtml(x.work)}${x.memo?' ・ '+escapeHtml(x.memo):''}</div></div><div class="amount">${yen(x.amount)}</div><div><button class="delete edit-expense" data-id="${x.id}" aria-label="編集">✎</button><button class="delete delete-expense" data-id="${x.id}" aria-label="削除">×</button></div></article>`).join(''):'<div class="empty">この月の経費記録はありません。</div>';
     }
