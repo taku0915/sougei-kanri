@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta http-equiv="Cache-Control" content="no-store"><title>裏帳簿｜会話連携へ引き継ぎ</title><style>body{margin:0;padding:36px 20px;background:#f2f2ef;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;color:#181a1c}main{max-width:480px;margin:auto;background:white;border:1px solid #e5e5e0;border-radius:18px;padding:24px}h1{font-size:23px}p{font-size:14px;line-height:1.8;color:#596167}button{width:100%;padding:15px;border:0;border-radius:12px;background:#151719;color:white;font:inherit;font-weight:750}button:disabled{opacity:.45}.label{color:#b38a43;font-size:12px;letter-spacing:.08em}</style></head><body><main><div class="label">裏帳簿・初回のみ</div><h1>会話で使える裏帳簿へ</h1><p>このブラウザに保存されている収支を、本人専用の会話連携版へ引き継ぎます。元の記録はそのまま残ります。</p><p id="counts"></p><button id="send" disabled>会話連携版へ引き継ぐ</button><p id="status" role="status"></p></main><script>
+(function(){
+  'use strict';
+  const target='https://urachoubo-chat.noisy-rat-9072.chatgpt.site';
+  const nonce=new URLSearchParams(location.search).get('nonce');
+  const status=document.getElementById('status'),button=document.getElementById('send');
+  let backup;
+  try{
+    if(!window.opener||!nonce||!/^[a-f0-9-]{36}$/.test(nonce))throw new Error('会話連携版の「元の裏帳簿から引き継ぐ」ボタンから開いてください。');
+    const keys=['sougeiEntries','sougeiExpenses','urachouboSettings'];
+    const data=Object.fromEntries(keys.map(key=>[key,localStorage.getItem(key)]));
+    const entries=JSON.parse(data.sougeiEntries||'[]'),expenses=JSON.parse(data.sougeiExpenses||'[]');
+    if(!Array.isArray(entries)||!Array.isArray(expenses))throw new Error('保存データを読み込めませんでした。元の裏帳簿からバックアップして引き継いでください。');
+    document.getElementById('counts').textContent='収入 '+entries.length+'件 ／ 支出 '+expenses.length+'件';
+    if(!entries.length&&!expenses.length)throw new Error('このブラウザには記録がありません。ホーム画面の裏帳簿を開いて「設定 → バックアップ」で保存し、会話連携版で取り込んでください。');
+    backup={app:'sougei-kanri',version:3,exportedAt:new Date().toISOString(),data};button.disabled=false;
+  }catch(e){status.textContent=e.message;}
+  button.onclick=()=>{window.opener.postMessage({type:'urachoubo-transfer',nonce,backup},target);button.disabled=true;status.textContent='会話連携版に送信しました。元の画面に戻り、件数を確認して引き継ぎを完了してください。';};
+})();
+</script></body></html>
